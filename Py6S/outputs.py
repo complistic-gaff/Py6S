@@ -124,6 +124,11 @@ class Outputs(object):
             raise OutputParsingError("6S didn't return a full output. See raw 6S output above for "
                                      "more information and check for invalid parameter inputs")
 
+        for index in range(len(lines)):
+            current_line = lines[index]
+            if "6SV version" in current_line:
+                items = current_line.split()
+                self.values["version"] = str(items[2])
 
         CURRENT = 0
         WHOLE_LINE = (0, 30)
@@ -138,53 +143,108 @@ class Outputs(object):
         # it to - the type conversion function must be specified. More specific functions such as math.floor can
         # be used here if desired.
 
-        #              Search Term                                Line   Index DictKey   Type
-        extractors = {"6SV version": (CURRENT, 2, "version", str),
-                      "month": (CURRENT, 1, "month", self.to_int),
-                      "day": (CURRENT, 4, "day", self.to_int),
-                      "solar zenith angle": (CURRENT, 3, "solar_z", self.to_int),
-                      "solar azimuthal angle": (CURRENT, 8, "solar_a", self.to_int),
-                      "view zenith angle": (CURRENT, 3, "view_z", self.to_int),
-                      "view azimuthal angle": (CURRENT, 8, "view_a", self.to_int),
-                      "scattering angle": (CURRENT, 2, "scattering_angle", float),
-                      "azimuthal angle difference": (CURRENT, 7, "azimuthal_angle_difference", float),
-                      "optical condition identity": (1, WHOLE_LINE, "visibility", self.extract_vis),
-                      "optical condition": (1, WHOLE_LINE, "aot550", self.extract_aot),
-                      "ground pressure": (CURRENT, 3, "ground_pressure", float),
-                      "ground altitude": (CURRENT, 3, "ground_altitude", float),
+        extractors = None
 
-                      "appar. rad.(w/m2/sr/mic)": (CURRENT, 2, "apparent_reflectance", float),
-                      "appar. rad.": (CURRENT, 5, "apparent_radiance", float),
-                      "total gaseous transmittance": (CURRENT, 3, "total_gaseous_transmittance", float),
+        if float(self.values["version"]) < 2.0:
+            #   Search Term   Line   Index DictKey   Type
+            extractors = {
+                "month": (CURRENT, 1, "month", self.to_int),
+                "day": (CURRENT, 4, "day", self.to_int),
+                "solar zenith angle": (CURRENT, 3, "solar_z", self.to_int),
+                "solar azimuthal angle": (CURRENT, 8, "solar_a", self.to_int),
+                "view zenith angle": (CURRENT, 3, "view_z", self.to_int),
+                "view azimuthal angle": (CURRENT, 8, "view_a", self.to_int),
+                "scattering angle": (CURRENT, 2, "scattering_angle", float),
+                "azimuthal angle difference": (CURRENT, 7, "azimuthal_angle_difference", float),
+                "optical condition identity": (1, WHOLE_LINE, "visibility", self.extract_vis),
+                "optical condition": (1, WHOLE_LINE, "aot550", self.extract_aot),
+                "ground pressure": (CURRENT, 3, "ground_pressure", float),
+                "ground altitude": (CURRENT, 3, "ground_altitude", float),
 
-                      "wv above aerosol": (CURRENT, 4, "wv_above_aerosol", float),
-                      "wv mixed with aerosol": (CURRENT, 10, "wv_mixed_with_aerosol", float),
-                      "wv under aerosol": (CURRENT, 4, "wv_under_aerosol", float),
+                "appar. rad.(w/m2/sr/mic)": (CURRENT, 2, "apparent_reflectance", float),
+                "appar. rad.": (CURRENT, 5, "apparent_radiance", float),
+                "total gaseous transmittance": (CURRENT, 3, "total_gaseous_transmittance", float),
 
-                      "% of irradiance": (2, 0, "percent_direct_solar_irradiance", float),
-                      "% of irradiance at": (2, 1, "percent_diffuse_solar_irradiance", float),
-                      "% of irradiance at ground level": (2, 2, "percent_environmental_irradiance", float),
-                      "reflectance at satellite level": (2, 0, "atmospheric_intrinsic_reflectance", float),
-                      "reflectance at satellite lev": (2, 1, "background_reflectance", float),
-                      "reflectance at satellite l": (2, 2, "pixel_reflectance", float),
-                      "irr. at ground level": (2, 0, "direct_solar_irradiance", float),
-                      "irr. at ground level (w/": (2, 1, "diffuse_solar_irradiance", float),
-                      "irr. at ground level (w/m2/mic)": (2, 2, "environmental_irradiance", float),
-                      "rad at satel. level": (2, 0, "atmospheric_intrinsic_radiance", float),
-                      "rad at satel. level (w/m2/": (2, 1, "background_radiance", float),
-                      "rad at satel. level (w/m2/sr/mic)": (2, 2, "pixel_radiance", float),
-                      "sol. spect (in w/m2/mic)": (1, 0, "solar_spectrum", float),
+                "wv above aerosol": (CURRENT, 4, "wv_above_aerosol", float),
+                "wv mixed with aerosol": (CURRENT, 10, "wv_mixed_with_aerosol", float),
+                "wv under aerosol": (CURRENT, 4, "wv_under_aerosol", float),
+
+                "% of irradiance": (2, 0, "percent_direct_solar_irradiance", float),
+                "% of irradiance at": (2, 1, "percent_diffuse_solar_irradiance", float),
+                "% of irradiance at ground level": (2, 2, "percent_environmental_irradiance", float),
+                "reflectance at satellite level": (2, 0, "atmospheric_intrinsic_reflectance", float),
+                "reflectance at satellite lev": (2, 1, "background_reflectance", float),
+                "reflectance at satellite l": (2, 2, "pixel_reflectance", float),
+                "irr. at ground level": (2, 0, "direct_solar_irradiance", float),
+                "irr. at ground level (w/": (2, 1, "diffuse_solar_irradiance", float),
+                "irr. at ground level (w/m2/mic)": (2, 2, "environmental_irradiance", float),
+                "rad at satel. level": (2, 0, "atmospheric_intrinsic_radiance", float),
+                "rad at satel. level (w/m2/": (2, 1, "background_radiance", float),
+                "rad at satel. level (w/m2/sr/mic)": (2, 2, "pixel_radiance", float),
+                "sol. spect (in w/m2/mic)": (1, 0, "solar_spectrum", float),
 
 
-                      "measured radiance [w/m2/sr/mic]": (CURRENT, 4, "measured_radiance", float),
-                      "atmospherically corrected reflectance": (1, 3, "atmos_corrected_reflectance_lambertian", float),
-                      "atmospherically corrected reflect": (2, 3, "atmos_corrected_reflectance_brdf", float),
-                      "coefficients xa": (CURRENT, 5, "coef_xa", float),
-                      "coefficients xa xb": (CURRENT, 6, "coef_xb", float),
-                      "coefficients xa xb xc": (CURRENT, 7, "coef_xc", float),
-                      "int. funct filter (in mic)": (1, 0, 'int_funct_filt', float),
-                      "int. sol. spect (in w/m2)": (1, 1, 'int_solar_spectrum', float)
-                      }
+                "measured radiance [w/m2/sr/mic]": (CURRENT, 4, "measured_radiance", float),
+                "atmospherically corrected reflectance": (1, 3, "atmos_corrected_reflectance_lambertian", float),
+                "atmospherically corrected reflect": (2, 3, "atmos_corrected_reflectance_brdf", float),
+                "coefficients xa": (CURRENT, 5, "coef_xa", float),
+                "coefficients xa xb": (CURRENT, 6, "coef_xb", float),
+                "coefficients xa xb xc": (CURRENT, 7, "coef_xc", float),
+                "int. funct filter (in mic)": (1, 0, 'int_funct_filt', float),
+                "int. sol. spect (in w/m2)": (1, 1, 'int_solar_spectrum', float)
+            }
+        else:
+            #   Search Term   Line   Index DictKey   Type
+            extractors = {
+                "month": (CURRENT, 1, "month", self.to_int),
+                "day": (CURRENT, 4, "day", self.to_int),
+                "solar zenith angle": (CURRENT, 3, "solar_z", self.to_int),
+                "solar azimuthal angle": (CURRENT, 8, "solar_a", self.to_int),
+                "view zenith angle": (CURRENT, 3, "view_z", self.to_int),
+                "view azimuthal angle": (CURRENT, 8, "view_a", self.to_int),
+                "scattering angle": (CURRENT, 2, "scattering_angle", float),
+                "azimuthal angle difference": (CURRENT, 7, "azimuthal_angle_difference", float),
+                "optical condition identity": (1, WHOLE_LINE, "visibility", self.extract_vis),
+                "optical condition": (1, WHOLE_LINE, "aot550", self.extract_aot),
+                "ground pressure": (CURRENT, 3, "ground_pressure", float),
+                "ground altitude": (CURRENT, WHOLE_LINE, "ground_altitude", self.extract_v2_altitude),
+
+                "appar. rad.(w/m2/sr/mic)": (CURRENT, 2, "apparent_reflectance", float),
+                "appar. rad.": (CURRENT, 5, "apparent_radiance", float),
+                "total gaseous transmittance": (CURRENT, 3, "total_gaseous_transmittance", float),
+
+                "wv above aerosol": (CURRENT, 4, "wv_above_aerosol", float),
+                "wv mixed with aerosol": (CURRENT, 10, "wv_mixed_with_aerosol", float),
+                "wv under aerosol": (CURRENT, 4, "wv_under_aerosol", float),
+
+                "% of irradiance": (2, 0, "percent_direct_solar_irradiance", float),
+                "% of irradiance at": (2, 1, "percent_diffuse_solar_irradiance", float),
+                "% of irradiance at ground level": (2, 2, "percent_environmental_irradiance", float),
+                "reflectance at satellite level": (2, 0, "atmospheric_intrinsic_reflectance", float),
+                "reflectance at satellite lev": (2, 1, "background_reflectance", float),
+                "reflectance at satellite l": (2, 2, "pixel_reflectance", float),
+                "irr. at ground level": (2, 0, "direct_solar_irradiance", float),
+                "irr. at ground level (w/": (2, 1, "diffuse_solar_irradiance", float),
+                "irr. at ground level (w/m2/mic)": (2, 2, "environmental_irradiance", float),
+                "rad at satel. level": (2, 0, "atmospheric_intrinsic_radiance", float),
+                "rad at satel. level (w/m2/": (2, 1, "background_radiance", float),
+                "rad at satel. level (w/m2/sr/mic)": (2, 2, "pixel_radiance", float),
+                "sol. spect (in w/m2/mic)": (1, 0, "solar_spectrum", float),
+
+
+                "measured radiance [w/m2/sr/mic]": (CURRENT, 4, "measured_radiance", float),
+                "atmospherically corrected reflectance": (1, 3, "atmos_corrected_reflectance_lambertian", float),
+                "atmospherically corrected reflect": (2, 3, "atmos_corrected_reflectance_brdf", float),
+                "coefficients xa ": (CURRENT, 5, "coef_xa", float),
+                "coefficients xa xb": (CURRENT, 6, "coef_xb", float),
+                "coefficients xa xb xc": (CURRENT, 7, "coef_xc", float),
+                "coefficients xap ": (CURRENT, 5, "coef_xap", float),
+                # "coefficients xap xb": (CURRENT, 6, "coef_xbp", float),
+                # "coefficients xap xb xc": (CURRENT, 7, "coef_xcp", float),
+                "int. funct filter (in mic)": (1, 0, 'int_funct_filt', float),
+                "int. sol. spect (in w/m2)": (1, 1, 'int_solar_spectrum', float)
+            }
+
         # Process most variables in the output
         for index in range(len(lines)):
             current_line = lines[index]
@@ -310,6 +370,12 @@ class Outputs(object):
 
         """
         return int(float(str))
+
+    def extract_v2_altitude(self, data):
+        """Extracts altitude"""
+        s = " ".join(data)
+        spl = s.split('[km]')
+        return -float(spl[1])
 
     def extract_vis(self, data):
         """Extracts the visibility from the visibility and AOT line in the output"""

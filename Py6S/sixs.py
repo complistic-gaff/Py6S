@@ -109,7 +109,7 @@ class SixS(object):
 
     __version__ = "1.8.0"
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, sixsversion=SIXSVERSION):
         """Initialises the class and finds the right 6S executable to use.
 
         Sets default parameter values (a set of fairly sensible values that will allow a simple test run to be performed),
@@ -120,7 +120,7 @@ class SixS(object):
         * ``path`` -- (Optional) The path to the 6S executable - if not specified then the system PATH and current directory are searched for the executable.
 
         """
-        self.sixs_path = self._find_path(path)
+        self.sixs_path = self._find_path(path, sixsversion)
 
         self.atmos_profile = AtmosProfile.PredefinedType(AtmosProfile.MidlatitudeSummer)
         self.aero_profile = AeroProfile.PredefinedType(AeroProfile.Maritime)
@@ -146,7 +146,7 @@ class SixS(object):
 
         self.atmos_corr = AtmosCorr.NoAtmosCorr()
 
-    def _find_path(self, path=None):
+    def _find_path(self, path=None, sixsversion=SIXSVERSION):
         """Finds the path of the 6S executable.
 
         Arguments:
@@ -159,7 +159,7 @@ class SixS(object):
         if path is not None:
             return path
         else:
-            return self._which('sixs.exe') or self._which('sixs') or self._which('sixsV1.1') or self._which('sixsV1.1.exe')
+            return self._which('sixsV'+sixsversion) or self._which('sixsV'+sixsversion+'.exe') or self._which('sixs.exe') or self._which('sixs')
 
     def _which(self, program):
         def is_exe(fpath):
